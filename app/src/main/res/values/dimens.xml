@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="chart_title_text_size">20sp</dimen>
+    <dimen name="axis_title_text_size">16sp</dimen>
+    <dimen name="legend_text_size">14sp</dimen>
+    <dimen name="labels_text_size">12sp</dimen>
+
+    <dimen name="margin_top">50dp</dimen>
+    <dimen name="margin_bottom">40dp</dimen>
+    <dimen name="margin_left">30dp</dimen>
+    <dimen name="margin_right">30dp</dimen>
+</resources>
