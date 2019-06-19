@@ -242,12 +242,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnDisconect.setEnabled(true);
                 //getMeasurementRequest(readAdressDestination());
                 btnConnect.postDelayed(runnable,3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
+                textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
             case R.id.buttonDisconect:
                 aSwitch.setChecked(false);
                 btnDisconect.setEnabled(false);
                 btnConnect.setEnabled(true);
-                textViewIpAdress.setEnabled(false);
+                textViewIpAdress.setVisibility(TextView.INVISIBLE);
                 break;
         }
     }
