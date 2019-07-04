@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 28
+    project.archivesBaseName = "KSP_CLIENT"
     defaultConfig {
         applicationId "polsl.p.ksp_client"
         minSdkVersion 21
@@ -17,6 +18,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                variant.outputs.all { output ->
+                    project.ext { appName = 'KSP_CLIENT' }
+                    outputFileName = "${project.ext.appName}_${variant.buildType.name}_${defaultConfig.versionName}.apk"
+                }
+            }
         }
     }
 
