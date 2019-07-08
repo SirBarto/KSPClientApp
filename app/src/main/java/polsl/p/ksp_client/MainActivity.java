@@ -185,17 +185,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             ArrayList<Entry> yValuesHumidity = new ArrayList<>();
             yValuesHumidity.add(new Entry(i, humidity.floatValue()));
-      /*  yValuesHumidity.add(new Entry(1,20f));
-        yValuesHumidity.add(new Entry(2,25f));
-        yValuesHumidity.add(new Entry(3,30f));
-        yValuesHumidity.add(new Entry(4,40f));*/
 
             ArrayList<Entry> yValuesPressure = new ArrayList<>();
             yValuesPressure.add(new Entry(i, pressure.floatValue()));
-       /* yValuesPressure.add(new Entry(1,20f));
-        yValuesPressure.add(new Entry(2,40f));
-        yValuesPressure.add(new Entry(3,60f));
-        yValuesPressure.add(new Entry(4,70f));*/
 
             LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Data Set Temperature");
             dataSetTemperature.setFillAlpha(110);
