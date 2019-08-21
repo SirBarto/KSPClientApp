@@ -28,6 +28,6 @@ public class AdressContector {
 
     @Override
     public String toString() {
-        return "http://" + this.POMIAR_URL + ":" + this.PORT + "/test";
+       return "http://" + this.POMIAR_URL + ":" + this.PORT;
     }
 }
