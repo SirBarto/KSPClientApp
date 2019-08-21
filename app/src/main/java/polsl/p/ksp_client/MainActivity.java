@@ -11,22 +11,11 @@ import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.Console;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -36,6 +25,14 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.jjoe64.graphview.series.DataPoint;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -51,10 +48,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ArrayAdapter<Measurement> pomiarArrayAdapter;
 
     RequestQueue queue;
+
     //adres wprowadzony statycznie
     //String urlForGetRequest = "http://10.0.2.2:8080/test";
 
     Double temperature, humidity, pressure;
+
+    //TODO classa połączenie do serwera
     AdressContector adressContector;
 
     @Override
@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
         list.setAdapter(adapter);
 */
+
         queue = Volley.newRequestQueue(this);
         pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
 
@@ -99,37 +100,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
         graphView.addSeries(series);
 */
-
     }
 
-    private void getMeasurementRequest(String urlForGetRequest) {
-        String urlForGetRequestt = "http://myjson.com/1fdkdb";
-         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, urlForGetRequestt, null, new Response.Listener<JSONArray>() {
+    public void getMeasurementRequest(String urlForGetRequest) {
+        final JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, urlForGetRequest, null, new Response.Listener<JSONObject>() {
             int counter=0;
             @Override
-            public void onResponse(JSONArray response) {
+            public void onResponse(JSONObject response) {
                 try {
-                    JSONArray jsonArray = new JSONArray("measurement");
-                    for(int i=0;i<jsonArray.length();i++)
-                    {
-                        JSONObject measurement = jsonArray.getJSONObject(i);
-
-                        temperature = measurement.getDouble("temperature");
-                        humidity = measurement.getDouble("humidity");
-                        pressure = measurement.getDouble("pressure");
-                        counter++;
-                        drawingChart(temperature, humidity, pressure,counter);
-                        pomiarList.add(new Measurement(temperature, humidity, pressure));
-                        list.setAdapter(pomiarArrayAdapter);
-                    }
-
-                    //temperature = response.getDouble("temperature");
-                  /*  humidity = response.getDouble("humidity");
+                    temperature = response.getDouble("temperature");
+                    humidity = response.getDouble("humidity");
                     pressure = response.getDouble("pressure");
                     counter++;
                     drawingChart(temperature, humidity, pressure,counter);
+
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
-                    list.setAdapter(pomiarArrayAdapter);*/
+                    list.setAdapter(pomiarArrayAdapter);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -140,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
         });
-        queue.add(jsonArrayRequest);
+        queue.add(jsonObjectRequest);
         sendConfirmRequest(urlForGetRequest);
     }
 
@@ -246,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 aSwitch.setChecked(true);
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
-              //getMeasurementRequest(readAdressDestination());
+                //getMeasurementRequest(readAdressDestination());
                 btnConnect.postDelayed(runnable,3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
