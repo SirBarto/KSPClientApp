@@ -3,6 +3,7 @@ package polsl.p.ksp_client;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -35,7 +36,13 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.google.gson.annotations.SerializedName;
 import com.jjoe64.graphview.series.DataPoint;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -47,10 +54,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText textIp, textPort;
     TextView textViewIpAdress;
 
+    @SerializedName("measurement")
     List<Measurement> pomiarList = new ArrayList<>();
     private ArrayAdapter<Measurement> pomiarArrayAdapter;
 
     RequestQueue queue;
+    Retrofit retrofit;
     //adres wprowadzony statycznie
     //String urlForGetRequest = "http://10.0.2.2:8080/test";
 
@@ -90,7 +99,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
         list.setAdapter(adapter);
 */
-        queue = Volley.newRequestQueue(this);
+
+
         pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
 
         //Graph static
@@ -103,45 +113,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void getMeasurementRequest(String urlForGetRequest) {
-        String urlForGetRequestt = "http://myjson.com/1fdkdb";
-         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, urlForGetRequestt, null, new Response.Listener<JSONArray>() {
-            int counter=0;
+        String urlForGetRequestt = "http://myjson.com/17oorz/";
+        retrofit = new Retrofit.Builder()
+                .baseUrl(urlForGetRequest)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
+        Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
+
+        call.enqueue(new Callback<List<Measurement>>() {
             @Override
-            public void onResponse(JSONArray response) {
-                try {
-                    JSONArray jsonArray = new JSONArray("measurement");
-                    for(int i=0;i<jsonArray.length();i++)
-                    {
-                        JSONObject measurement = jsonArray.getJSONObject(i);
+            public void onResponse(Call<List<Measurement>> call, retrofit2.Response<List<Measurement>> response) {
+                if(!response.isSuccessful()){
+                    Log.e("Info","Information response: "+response.code());
+                    Log.e("Info","Information response body: "+response.body());
+                    return;
+                }
+                List<Measurement> measurements = response.body();
 
-                        temperature = measurement.getDouble("temperature");
-                        humidity = measurement.getDouble("humidity");
-                        pressure = measurement.getDouble("pressure");
-                        counter++;
-                        drawingChart(temperature, humidity, pressure,counter);
-                        pomiarList.add(new Measurement(temperature, humidity, pressure));
-                        list.setAdapter(pomiarArrayAdapter);
-                    }
+                for(Measurement measurement : measurements){
+                    temperature = measurement.getTemperature();
+                    humidity = measurement.getHumidity();
+                    pressure = measurement.getPressure();
 
-                    //temperature = response.getDouble("temperature");
-                  /*  humidity = response.getDouble("humidity");
+                    list.setAdapter(pomiarArrayAdapter);
+                    pomiarList.add(new Measurement(temperature, humidity, pressure));
+                   // drawingChart(temperature, humidity, pressure,counter);
+                }
+            }
+            @Override
+            public void onFailure(Call<List<Measurement>> call, Throwable t) {
+                Log.e("blad","blad json: "+t.getMessage());
+                Log.e("blad","blad json: "+t.toString());
+            }
+        });
+                    /*temperature = response.getDouble("temperature");
+                    humidity = response.getDouble("humidity");
                     pressure = response.getDouble("pressure");
                     counter++;
                     drawingChart(temperature, humidity, pressure,counter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
                     list.setAdapter(pomiarArrayAdapter);*/
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        queue.add(jsonArrayRequest);
-        sendConfirmRequest(urlForGetRequest);
+       // sendConfirmRequest(urlForGetRequest);
     }
 
     //Potwierdzenie otrzymania ciągu danych od serwera, wiem można by zrobić lepiej ;)
@@ -169,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return params;
             }
         };
-        queue.add(stringRequest);
+       queue.add(stringRequest);
     }
 
     public String readAdressDestination() {
