@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -36,6 +37,8 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import com.jjoe64.graphview.series.DataPoint;
 
@@ -54,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText textIp, textPort;
     TextView textViewIpAdress;
 
-    @SerializedName("measurement")
     List<Measurement> pomiarList = new ArrayList<>();
     private ArrayAdapter<Measurement> pomiarArrayAdapter;
 
@@ -99,8 +101,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
         list.setAdapter(adapter);
 */
-
-
         pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
 
         //Graph static
@@ -109,43 +109,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
         graphView.addSeries(series);
 */
-
     }
 
+    //TODO GET JSON with Retrofit
     private void getMeasurementRequest(String urlForGetRequest) {
         String urlForGetRequestt = "http://myjson.com/17oorz/";
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
         retrofit = new Retrofit.Builder()
                 .baseUrl(urlForGetRequest)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
         JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
         Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
-
+        Log.w("call", call.toString());
         call.enqueue(new Callback<List<Measurement>>() {
             @Override
             public void onResponse(Call<List<Measurement>> call, retrofit2.Response<List<Measurement>> response) {
-                if(!response.isSuccessful()){
-                    Log.e("Info","Information response: "+response.code());
-                    Log.e("Info","Information response body: "+response.body());
+                if (!response.isSuccessful()) {
+                    Log.i("Info", "Information response: " + response.code());
+                    Log.i("Info", "Information response body: " + response.body());
+                    //  Log.e("Info","Information call: "+call.toString());
                     return;
                 }
                 List<Measurement> measurements = response.body();
 
-                for(Measurement measurement : measurements){
+                for (Measurement measurement : measurements) {
                     temperature = measurement.getTemperature();
                     humidity = measurement.getHumidity();
                     pressure = measurement.getPressure();
 
                     list.setAdapter(pomiarArrayAdapter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
-                   // drawingChart(temperature, humidity, pressure,counter);
+                    Log.i("info about list", list.toString());
+                    Log.i("info about pomiarList", pomiarList.toString());
+                    // drawingChart(temperature, humidity, pressure,counter);
                 }
             }
+
             @Override
             public void onFailure(Call<List<Measurement>> call, Throwable t) {
-                Log.e("blad","blad json: "+t.getMessage());
-                Log.e("blad","blad json: "+t.toString());
+                Log.e("blad", "blad json: " + t.getMessage());
+                Log.e("blad", "blad json: " + t.toString());
             }
         });
                     /*temperature = response.getDouble("temperature");
@@ -155,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     drawingChart(temperature, humidity, pressure,counter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
                     list.setAdapter(pomiarArrayAdapter);*/
-       // sendConfirmRequest(urlForGetRequest);
+        // sendConfirmRequest(urlForGetRequest);
     }
 
     //Potwierdzenie otrzymania ciągu danych od serwera, wiem można by zrobić lepiej ;)
@@ -183,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return params;
             }
         };
-       queue.add(stringRequest);
+        queue.add(stringRequest);
     }
 
     public String readAdressDestination() {
@@ -193,13 +200,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String POMIAR_URL = textIp.getText().toString();
         String PORT = textPort.getText().toString();
 
-        adressContector = new AdressContector(POMIAR_URL,PORT);
+        adressContector = new AdressContector(POMIAR_URL, PORT);
         textViewIpAdress.setText(adressContector.toString());/*to removed, for test only*/
         return adressContector.toString();
     }
 
     public void drawingChart(Double temperature, Double humidity, Double pressure, int counter) {
-        mchart = (LineChart) findViewById(R.id.lineChart);
+        mchart = findViewById(R.id.lineChart);
         mchart.setDragEnabled(true);
         mchart.setScaleEnabled(true);
 
@@ -260,8 +267,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 aSwitch.setChecked(true);
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
-              //getMeasurementRequest(readAdressDestination());
-                btnConnect.postDelayed(runnable,3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
+                //getMeasurementRequest(readAdressDestination());
+                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
             case R.id.buttonDisconect:
@@ -276,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final Runnable runnable = new Runnable() {
         @Override
         public void run() {
-            btnConnect.postDelayed(this,3000);
+            btnConnect.postDelayed(this, 3000);
             getMeasurementRequest(readAdressDestination());
         }
     };
