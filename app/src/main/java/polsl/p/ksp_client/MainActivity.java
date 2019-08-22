@@ -3,6 +3,7 @@ package polsl.p.ksp_client;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -35,7 +37,15 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 import com.jjoe64.graphview.series.DataPoint;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -51,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ArrayAdapter<Measurement> pomiarArrayAdapter;
 
     RequestQueue queue;
+    Retrofit retrofit;
     //adres wprowadzony statycznie
     //String urlForGetRequest = "http://10.0.2.2:8080/test";
 
@@ -90,7 +101,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
         list.setAdapter(adapter);
 */
-        queue = Volley.newRequestQueue(this);
         pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
 
         //Graph static
@@ -99,49 +109,60 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
         graphView.addSeries(series);
 */
-
     }
 
+    //TODO GET JSON with Retrofit
     private void getMeasurementRequest(String urlForGetRequest) {
-        String urlForGetRequestt = "http://myjson.com/1fdkdb";
-         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, urlForGetRequestt, null, new Response.Listener<JSONArray>() {
-            int counter=0;
+        String urlForGetRequestt = "http://myjson.com/17oorz/";
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
+        retrofit = new Retrofit.Builder()
+                .baseUrl(urlForGetRequest)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
+
+        JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
+        Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
+        Log.w("call", call.toString());
+        call.enqueue(new Callback<List<Measurement>>() {
             @Override
-            public void onResponse(JSONArray response) {
-                try {
-                    JSONArray jsonArray = new JSONArray("measurement");
-                    for(int i=0;i<jsonArray.length();i++)
-                    {
-                        JSONObject measurement = jsonArray.getJSONObject(i);
+            public void onResponse(Call<List<Measurement>> call, retrofit2.Response<List<Measurement>> response) {
+                if (!response.isSuccessful()) {
+                    Log.i("Info", "Information response: " + response.code());
+                    Log.i("Info", "Information response body: " + response.body());
+                    //  Log.e("Info","Information call: "+call.toString());
+                    return;
+                }
+                List<Measurement> measurements = response.body();
 
-                        temperature = measurement.getDouble("temperature");
-                        humidity = measurement.getDouble("humidity");
-                        pressure = measurement.getDouble("pressure");
-                        counter++;
-                        drawingChart(temperature, humidity, pressure,counter);
-                        pomiarList.add(new Measurement(temperature, humidity, pressure));
-                        list.setAdapter(pomiarArrayAdapter);
-                    }
+                for (Measurement measurement : measurements) {
+                    temperature = measurement.getTemperature();
+                    humidity = measurement.getHumidity();
+                    pressure = measurement.getPressure();
 
-                    //temperature = response.getDouble("temperature");
-                  /*  humidity = response.getDouble("humidity");
+                    list.setAdapter(pomiarArrayAdapter);
+                    pomiarList.add(new Measurement(temperature, humidity, pressure));
+                    Log.i("info about list", list.toString());
+                    Log.i("info about pomiarList", pomiarList.toString());
+                    // drawingChart(temperature, humidity, pressure,counter);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Measurement>> call, Throwable t) {
+                Log.e("blad", "blad json: " + t.getMessage());
+                Log.e("blad", "blad json: " + t.toString());
+            }
+        });
+                    /*temperature = response.getDouble("temperature");
+                    humidity = response.getDouble("humidity");
                     pressure = response.getDouble("pressure");
                     counter++;
                     drawingChart(temperature, humidity, pressure,counter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
                     list.setAdapter(pomiarArrayAdapter);*/
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        queue.add(jsonArrayRequest);
-        sendConfirmRequest(urlForGetRequest);
+        // sendConfirmRequest(urlForGetRequest);
     }
 
     //Potwierdzenie otrzymania ciągu danych od serwera, wiem można by zrobić lepiej ;)
@@ -179,13 +200,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String POMIAR_URL = textIp.getText().toString();
         String PORT = textPort.getText().toString();
 
-        adressContector = new AdressContector(POMIAR_URL,PORT);
+        adressContector = new AdressContector(POMIAR_URL, PORT);
         textViewIpAdress.setText(adressContector.toString());/*to removed, for test only*/
         return adressContector.toString();
     }
 
     public void drawingChart(Double temperature, Double humidity, Double pressure, int counter) {
-        mchart = (LineChart) findViewById(R.id.lineChart);
+        mchart = findViewById(R.id.lineChart);
         mchart.setDragEnabled(true);
         mchart.setScaleEnabled(true);
 
@@ -246,8 +267,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 aSwitch.setChecked(true);
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
-              //getMeasurementRequest(readAdressDestination());
-                btnConnect.postDelayed(runnable,3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
+                //getMeasurementRequest(readAdressDestination());
+                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
             case R.id.buttonDisconect:
@@ -262,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final Runnable runnable = new Runnable() {
         @Override
         public void run() {
-            btnConnect.postDelayed(this,3000);
+            btnConnect.postDelayed(this, 3000);
             getMeasurementRequest(readAdressDestination());
         }
     };

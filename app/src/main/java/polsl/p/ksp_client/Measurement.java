@@ -1,9 +1,20 @@
 package polsl.p.ksp_client;
 
-public class Measurement {
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
+
+public class Measurement implements Serializable {
+
+    @SerializedName("temperature")
+    @Expose
     private Double temperature;
+    @SerializedName("humidity")
+    @Expose
     private Double humidity;
+    @SerializedName("pressure")
+    @Expose
     private Double pressure;
 
     public Measurement(Double temperature, Double humidity, Double preassure) {
