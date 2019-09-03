@@ -70,6 +70,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ArrayList<Entry> yValuesHumidity;
     ArrayList<Entry> yValuesPressure;
 
+    ValueFormatter formatter;
+    XAxis xAxis;
+
     RequestQueue queue;
     Retrofit retrofit;
     //adres wprowadzony statycznie
@@ -119,6 +122,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
         graphView.addSeries(series);
 */
+        formatter = new ValueFormatter() {
+            @Override
+            public String getAxisLabel(float value, AxisBase axis) {
+                //    return arrayCounter.get(((int)value)-1);
+                return arrayCounter.get(0);
+            }
+        };
+
         dataSets = new ArrayList<>();
         yValuesTemperature = new ArrayList<>();
         yValuesPressure = new ArrayList<>();
@@ -127,6 +138,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mchart = findViewById(R.id.lineChart);
         mchart.setDragEnabled(true);
         mchart.setScaleEnabled(true);
+        xAxis = mchart.getXAxis();
     }
 
     //TODO GET JSON with Retrofit
@@ -230,19 +242,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void drawingChart(Double temperature, Double humidity, Double pressure, int counter) {
 
-
-/*
-        ValueFormatter formatter = new ValueFormatter() {
-            @Override
-            public String getAxisLabel(float value, AxisBase axis) {
-            //    return arrayCounter.get(((int)value)-1);
-                return arrayCounter.get(1);
-            }
-        };
-*/
-        XAxis xAxis = mchart.getXAxis();
-
-
      /*   yValuesTemperature.add(new Entry(1,50f));
         yValuesTemperature.add(new Entry(2,70f));
         yValuesTemperature.add(new Entry(3,30f));
@@ -277,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         LineData data = new LineData(dataSets);
         xAxis.setGranularity(1f);
-       // xAxis.setValueFormatter(formatter);
+        xAxis.setValueFormatter(formatter);
         mchart.setData(data);
         mchart.invalidate();
     }
@@ -310,6 +309,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnConnect.setEnabled(true);
                 textViewIpAdress.setVisibility(TextView.INVISIBLE);
                 btnDisconect.removeCallbacks(runnable); //zatrzymanie pobierania danych z serwera
+                mchart.invalidate();//TODO 00:40 nie sprawdzone
                 break;
         }
     }
