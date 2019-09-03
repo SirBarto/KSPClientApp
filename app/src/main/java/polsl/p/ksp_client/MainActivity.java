@@ -122,8 +122,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
-        JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
+        final JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
         Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
+     //   Call<ListMeasurement> call = jsonMeasurementApi.getMeasurement();
         Log.w("call", call.toString());
         call.enqueue(new Callback<List<Measurement>>() {
             @Override
@@ -135,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
                 List<Measurement> measurements = response.body();
-
+                int counter=0;
                 for (Measurement measurement : measurements) {
                     temperature = measurement.getTemperature();
                     humidity = measurement.getHumidity();
@@ -143,9 +144,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     list.setAdapter(pomiarArrayAdapter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
+                    counter++;
                     Log.i("info about list", list.toString());
                     Log.i("info about pomiarList", pomiarList.toString());
-                    // drawingChart(temperature, humidity, pressure,counter);
+                    drawingChart(temperature, humidity, pressure,counter);
                 }
             }
 
@@ -210,14 +212,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mchart.setDragEnabled(true);
         mchart.setScaleEnabled(true);
 
-        for (int i = 0; i < counter; i++) {
+        for (int i = 0; i <= counter; i++) {
             ArrayList<Entry> yValuesTemperature = new ArrayList<>();
-            yValuesTemperature.add(new Entry(i, temperature.floatValue()));
-       /* yValuesTemperature.add(new Entry(1,50f));
+            yValuesTemperature.add(new Entry(Float.valueOf(i), temperature.floatValue()));
+     /*   yValuesTemperature.add(new Entry(1,50f));
         yValuesTemperature.add(new Entry(2,70f));
         yValuesTemperature.add(new Entry(3,30f));
-        yValuesTemperature.add(new Entry(4,10f));*/
-
+        yValuesTemperature.add(new Entry(4,10f));
+*/
             ArrayList<Entry> yValuesHumidity = new ArrayList<>();
             yValuesHumidity.add(new Entry(i, humidity.floatValue()));
 
@@ -268,7 +270,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
                 //getMeasurementRequest(readAdressDestination());
-                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
+                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody po 3s raz zapyta serwer o zestaw danych*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
             case R.id.buttonDisconect:
@@ -276,6 +278,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnDisconect.setEnabled(false);
                 btnConnect.setEnabled(true);
                 textViewIpAdress.setVisibility(TextView.INVISIBLE);
+                btnDisconect.removeCallbacks(runnable); //zatrzymanie pobierania danych z serwera
                 break;
         }
     }
@@ -283,9 +286,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final Runnable runnable = new Runnable() {
         @Override
         public void run() {
-            btnConnect.postDelayed(this, 3000);
+            btnConnect.postDelayed(this, 3000);//co 3 sekundy pyta serwer o dane
             getMeasurementRequest(readAdressDestination());
         }
     };
+
+
 
 }
