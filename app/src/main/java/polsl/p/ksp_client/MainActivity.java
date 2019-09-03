@@ -33,9 +33,12 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -59,6 +62,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     List<Measurement> pomiarList = new ArrayList<>();
     private ArrayAdapter<Measurement> pomiarArrayAdapter;
+
+    ArrayList<ILineDataSet> dataSets;
+    ArrayList<String> arrayCounter;
+
+    ArrayList<Entry> yValuesTemperature;
+    ArrayList<Entry> yValuesHumidity;
+    ArrayList<Entry> yValuesPressure;
 
     RequestQueue queue;
     Retrofit retrofit;
@@ -109,11 +119,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
         graphView.addSeries(series);
 */
+        dataSets = new ArrayList<>();
+        yValuesTemperature = new ArrayList<>();
+        yValuesPressure = new ArrayList<>();
+        yValuesHumidity = new ArrayList<>();
+        arrayCounter = new ArrayList<String>();
+        mchart = findViewById(R.id.lineChart);
+        mchart.setDragEnabled(true);
+        mchart.setScaleEnabled(true);
     }
 
     //TODO GET JSON with Retrofit
     private void getMeasurementRequest(String urlForGetRequest) {
-        String urlForGetRequestt = "http://myjson.com/17oorz/";
+        String urlForGetRequestt = "http://myjson.com/ofirj/";
         Gson gson = new GsonBuilder()
                 .setLenient()
                 .create();
@@ -124,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         final JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
         Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
-     //   Call<ListMeasurement> call = jsonMeasurementApi.getMeasurement();
+
         Log.w("call", call.toString());
         call.enqueue(new Callback<List<Measurement>>() {
             @Override
@@ -144,7 +162,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     list.setAdapter(pomiarArrayAdapter);
                     pomiarList.add(new Measurement(temperature, humidity, pressure));
+
                     counter++;
+                    arrayCounter.add(String.valueOf(counter));
+
                     Log.i("info about list", list.toString());
                     Log.i("info about pomiarList", pomiarList.toString());
                     drawingChart(temperature, humidity, pressure,counter);
@@ -208,23 +229,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void drawingChart(Double temperature, Double humidity, Double pressure, int counter) {
-        mchart = findViewById(R.id.lineChart);
-        mchart.setDragEnabled(true);
-        mchart.setScaleEnabled(true);
 
-        for (int i = 0; i <= counter; i++) {
-            ArrayList<Entry> yValuesTemperature = new ArrayList<>();
-            yValuesTemperature.add(new Entry(Float.valueOf(i), temperature.floatValue()));
+
+/*
+        ValueFormatter formatter = new ValueFormatter() {
+            @Override
+            public String getAxisLabel(float value, AxisBase axis) {
+            //    return arrayCounter.get(((int)value)-1);
+                return arrayCounter.get(1);
+            }
+        };
+*/
+        XAxis xAxis = mchart.getXAxis();
+
+
      /*   yValuesTemperature.add(new Entry(1,50f));
         yValuesTemperature.add(new Entry(2,70f));
         yValuesTemperature.add(new Entry(3,30f));
         yValuesTemperature.add(new Entry(4,10f));
 */
-            ArrayList<Entry> yValuesHumidity = new ArrayList<>();
-            yValuesHumidity.add(new Entry(i, humidity.floatValue()));
+     //TODO dla kazdego i jest przypisywana ta sama pierwsza pobrana temperatura
 
-            ArrayList<Entry> yValuesPressure = new ArrayList<>();
-            yValuesPressure.add(new Entry(i, pressure.floatValue()));
+            yValuesTemperature.add(new Entry(counter, temperature.floatValue()));
+            yValuesHumidity.add(new Entry(counter, humidity.floatValue()));
+            yValuesPressure.add(new Entry(counter, pressure.floatValue()));
 
             LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Data Set Temperature");
             dataSetTemperature.setFillAlpha(110);
@@ -241,14 +269,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             dataSetPressure.setColor(Color.BLUE);
             dataSetPressure.setLineWidth(2f);
 
-            ArrayList<ILineDataSet> dataSets = new ArrayList<>();
             dataSets.add(dataSetTemperature);
             dataSets.add(dataSetHumidity);
             dataSets.add(dataSetPressure);
 
-            LineData data = new LineData(dataSets);
-            mchart.setData(data);
-        }
+
+
+        LineData data = new LineData(dataSets);
+        xAxis.setGranularity(1f);
+       // xAxis.setValueFormatter(formatter);
+        mchart.setData(data);
+        mchart.invalidate();
     }
 
     private DataPoint[] getDataPoint() {
