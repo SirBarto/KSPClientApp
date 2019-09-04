@@ -12,34 +12,22 @@ import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.Console;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.github.mikephil.charting.charts.LineChart;
+
+import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.SerializedName;
 import com.jjoe64.graphview.series.DataPoint;
 
 import retrofit2.Call;
@@ -52,21 +40,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ListView list;
     private com.github.mikephil.charting.charts.LineChart mchart;
 
-    Button btnConnect, btnDisconect;
-    Switch aSwitch;
-    EditText textIp, textPort;
-    TextView textViewIpAdress;
+    private Button btnConnect, btnDisconect;
+    private Switch aSwitch;
+    public EditText textIp, textPort;
+    private TextView textViewIpAdress;
 
-    List<Measurement> pomiarList = new ArrayList<>();
-    private ArrayAdapter<Measurement> pomiarArrayAdapter;
+    List<Measurement> surveyList = new ArrayList<>();
+    private ArrayAdapter<Measurement> surveyArrayAdapter;
+
+    ArrayList<ILineDataSet> dataSets;
+    ArrayList<String> arrayCounter;
+
+    private ArrayList<Entry> yValuesTemperature;
+    private ArrayList<Entry> yValuesHumidity;
+    private ArrayList<Entry> yValuesPressure;
+
+    ValueFormatter formatter;
+    XAxis xAxis;
+    public Legend legend;
 
     RequestQueue queue;
     Retrofit retrofit;
     //adres wprowadzony statycznie
     //String urlForGetRequest = "http://10.0.2.2:8080/test";
 
-    Double temperature, humidity, pressure;
+    private Double temperature, humidity, pressure;
     AdressContector adressContector;
+    int counter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,38 +82,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         list = findViewById(R.id.valuesList);
 
         textViewIpAdress = findViewById(R.id.textView);
-/*lokalny test
-        pomiarList.add(new Measurement(1.1, 1.3, 1.2));
-        pomiarList.add(new Measurement(2.1, 2.3, 2.2));
-        pomiarList.add(new Measurement(3.1, 3.3, 3.2));
 
-        pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine,pomiarList);
-        list.setAdapter(pomiarArrayAdapter);
-*/
-        //other version
- /*       Measurement[] pomiars = {
-          new Measurement(1.1,1.2,1.3),
-          new Measurement(2.1,2.2,2.3),
-          new Measurement(3.1,3.2,3.3),
-          new Measurement(4.1,4.2,4.3)
+        surveyArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, surveyList);
+
+        formatter = new ValueFormatter() {
+            @Override
+            public String getAxisLabel(float value, AxisBase axis) {
+                //    return arrayCounter.get(((int)value)-1);
+                return arrayCounter.get(0);
+            }
         };
 
-        ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
-        list.setAdapter(adapter);
-*/
-        pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
-
-        //Graph static
-/*
-        GraphView graphView = findViewById(R.id.chart);
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
-        graphView.addSeries(series);
-*/
+        dataSets = new ArrayList<>();
+        yValuesTemperature = new ArrayList<>();
+        yValuesPressure = new ArrayList<>();
+        yValuesHumidity = new ArrayList<>();
+        arrayCounter = new ArrayList<String>();
+        mchart = findViewById(R.id.lineChart);
+        mchart.setDragEnabled(true);
+        mchart.setScaleEnabled(true);
+        xAxis = mchart.getXAxis();
     }
 
     //TODO GET JSON with Retrofit
     private void getMeasurementRequest(String urlForGetRequest) {
-        String urlForGetRequestt = "http://myjson.com/17oorz/";
+        String urlForGetRequestt = "http://myjson.com/ofirj/";
         Gson gson = new GsonBuilder()
                 .setLenient()
                 .create();
@@ -122,8 +115,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
-        JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
+        final JsonMeasurementApi jsonMeasurementApi = retrofit.create(JsonMeasurementApi.class);
         Call<List<Measurement>> call = jsonMeasurementApi.getMeasurement();
+
         Log.w("call", call.toString());
         call.enqueue(new Callback<List<Measurement>>() {
             @Override
@@ -131,7 +125,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!response.isSuccessful()) {
                     Log.i("Info", "Information response: " + response.code());
                     Log.i("Info", "Information response body: " + response.body());
-                    //  Log.e("Info","Information call: "+call.toString());
                     return;
                 }
                 List<Measurement> measurements = response.body();
@@ -141,11 +134,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     humidity = measurement.getHumidity();
                     pressure = measurement.getPressure();
 
-                    list.setAdapter(pomiarArrayAdapter);
-                    pomiarList.add(new Measurement(temperature, humidity, pressure));
+                    list.setAdapter(surveyArrayAdapter);
+                    if(surveyList.size()==11)
+                        surveyList.clear();
+
+                    surveyList.add(new Measurement(temperature, humidity, pressure));
+
+                    counter++;
+                    arrayCounter.add(String.valueOf(counter));
+
                     Log.i("info about list", list.toString());
-                    Log.i("info about pomiarList", pomiarList.toString());
-                    // drawingChart(temperature, humidity, pressure,counter);
+                    Log.i("info about surveyList", surveyList.toString());
+                    drawingChart(temperature, humidity, pressure, counter);
                 }
             }
 
@@ -155,42 +155,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e("blad", "blad json: " + t.toString());
             }
         });
-                    /*temperature = response.getDouble("temperature");
-                    humidity = response.getDouble("humidity");
-                    pressure = response.getDouble("pressure");
-                    counter++;
-                    drawingChart(temperature, humidity, pressure,counter);
-                    pomiarList.add(new Measurement(temperature, humidity, pressure));
-                    list.setAdapter(pomiarArrayAdapter);*/
-        // sendConfirmRequest(urlForGetRequest);
-    }
-
-    //Potwierdzenie otrzymania ciągu danych od serwera, wiem można by zrobić lepiej ;)
-    public void sendConfirmRequest(String urlForGetRequest) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, urlForGetRequest, new Response.Listener<String>() {
-
-            @Override
-            public void onResponse(String response) {
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        }) {
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<>();
-                Boolean isOk = true;
-                String clientNameTest = "KSP_CLIENT";
-                String received = isOk.toString();
-                params.put("received", received);
-                params.put("client", clientNameTest);
-                return params;
-            }
-        };
-        queue.add(stringRequest);
     }
 
     public String readAdressDestination() {
@@ -206,47 +170,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void drawingChart(Double temperature, Double humidity, Double pressure, int counter) {
-        mchart = findViewById(R.id.lineChart);
-        mchart.setDragEnabled(true);
-        mchart.setScaleEnabled(true);
 
-        for (int i = 0; i < counter; i++) {
-            ArrayList<Entry> yValuesTemperature = new ArrayList<>();
-            yValuesTemperature.add(new Entry(i, temperature.floatValue()));
-       /* yValuesTemperature.add(new Entry(1,50f));
+     /*   yValuesTemperature.add(new Entry(1,50f));
         yValuesTemperature.add(new Entry(2,70f));
         yValuesTemperature.add(new Entry(3,30f));
-        yValuesTemperature.add(new Entry(4,10f));*/
+        yValuesTemperature.add(new Entry(4,10f));
+*/
+        //TODO dla kazdego i jest przypisywana ta sama pierwsza pobrana temperatura
 
-            ArrayList<Entry> yValuesHumidity = new ArrayList<>();
-            yValuesHumidity.add(new Entry(i, humidity.floatValue()));
+        yValuesTemperature.add(new Entry(counter, temperature.floatValue()));
+        yValuesHumidity.add(new Entry(counter, humidity.floatValue()));
+        yValuesPressure.add(new Entry(counter, (pressure.floatValue()) / 1000));
 
-            ArrayList<Entry> yValuesPressure = new ArrayList<>();
-            yValuesPressure.add(new Entry(i, pressure.floatValue()));
+        LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Temperature");
+        dataSetTemperature.setFillAlpha(110);
+        dataSetTemperature.setColor(Color.RED);
+        dataSetTemperature.setLineWidth(2f);
 
-            LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Data Set Temperature");
-            dataSetTemperature.setFillAlpha(110);
-            dataSetTemperature.setColor(Color.RED);
-            dataSetTemperature.setLineWidth(2f);
+        LineDataSet dataSetHumidity = new LineDataSet(yValuesHumidity, "Humidity");
+        dataSetHumidity.setFillAlpha(110);
+        dataSetHumidity.setColor(Color.GREEN);
+        dataSetHumidity.setLineWidth(2f);
 
-            LineDataSet dataSetHumidity = new LineDataSet(yValuesHumidity, "Data Set Humidity");
-            dataSetHumidity.setFillAlpha(110);
-            dataSetHumidity.setColor(Color.GREEN);
-            dataSetHumidity.setLineWidth(2f);
+        LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Pressure kPa  ");
+        dataSetPressure.setFillAlpha(110);
+        dataSetPressure.setColor(Color.BLUE);
+        dataSetPressure.setLineWidth(2f);
 
-            LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Data Set Pressure");
-            dataSetPressure.setFillAlpha(110);
-            dataSetPressure.setColor(Color.BLUE);
-            dataSetPressure.setLineWidth(2f);
+        dataSets.add(dataSetTemperature);
+        dataSets.add(dataSetHumidity);
+        dataSets.add(dataSetPressure);
 
-            ArrayList<ILineDataSet> dataSets = new ArrayList<>();
-            dataSets.add(dataSetTemperature);
-            dataSets.add(dataSetHumidity);
-            dataSets.add(dataSetPressure);
+        legend = mchart.getLegend();
+        legend.setYOffset(40);
+        legend.setForm(Legend.LegendForm.DEFAULT);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
 
-            LineData data = new LineData(dataSets);
-            mchart.setData(data);
-        }
+        LineData data = new LineData(dataSets);
+        xAxis.setGranularity(1f);
+        xAxis.setValueFormatter(formatter);
+        mchart.setData(data);
+        mchart.invalidate();
     }
 
     private DataPoint[] getDataPoint() {
@@ -267,8 +231,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 aSwitch.setChecked(true);
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
-                //getMeasurementRequest(readAdressDestination());
-                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody co 3s w celu odpytania serwera o nowe dane*/
+                btnConnect.postDelayed(runnable, 3000); /*wywołanie metody po 3s raz zapyta serwer o zestaw danych*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
             case R.id.buttonDisconect:
@@ -276,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnDisconect.setEnabled(false);
                 btnConnect.setEnabled(true);
                 textViewIpAdress.setVisibility(TextView.INVISIBLE);
+                btnDisconect.removeCallbacks(runnable); //zatrzymanie pobierania danych z serwera
                 break;
         }
     }
@@ -283,9 +247,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final Runnable runnable = new Runnable() {
         @Override
         public void run() {
-            btnConnect.postDelayed(this, 3000);
+            btnConnect.postDelayed(this, 3000);//co 3 sekundy pyta serwer o dane
             getMeasurementRequest(readAdressDestination());
         }
     };
+
 
 }
