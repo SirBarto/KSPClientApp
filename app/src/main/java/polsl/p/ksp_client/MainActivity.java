@@ -13,16 +13,10 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
+
 import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
@@ -46,10 +40,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ListView list;
     private com.github.mikephil.charting.charts.LineChart mchart;
 
-    Button btnConnect, btnDisconect;
-    Switch aSwitch;
-    EditText textIp, textPort;
-    TextView textViewIpAdress;
+    private Button btnConnect, btnDisconect;
+    private Switch aSwitch;
+    public EditText textIp, textPort;
+    private TextView textViewIpAdress;
 
     List<Measurement> surveyList = new ArrayList<>();
     private ArrayAdapter<Measurement> surveyArrayAdapter;
@@ -57,20 +51,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ArrayList<ILineDataSet> dataSets;
     ArrayList<String> arrayCounter;
 
-    ArrayList<Entry> yValuesTemperature;
-    ArrayList<Entry> yValuesHumidity;
-    ArrayList<Entry> yValuesPressure;
+    private ArrayList<Entry> yValuesTemperature;
+    private ArrayList<Entry> yValuesHumidity;
+    private ArrayList<Entry> yValuesPressure;
 
     ValueFormatter formatter;
     XAxis xAxis;
-    Legend legend;
+    public Legend legend;
 
     RequestQueue queue;
     Retrofit retrofit;
     //adres wprowadzony statycznie
     //String urlForGetRequest = "http://10.0.2.2:8080/test";
 
-    Double temperature, humidity, pressure;
+    private Double temperature, humidity, pressure;
     AdressContector adressContector;
     int counter = 0;
 
@@ -141,6 +135,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     pressure = measurement.getPressure();
 
                     list.setAdapter(surveyArrayAdapter);
+                    if(surveyList.size()==11)
+                        surveyList.clear();
+
                     surveyList.add(new Measurement(temperature, humidity, pressure));
 
                     counter++;
@@ -158,35 +155,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e("blad", "blad json: " + t.toString());
             }
         });
-        // sendConfirmRequest(urlForGetRequest);
-    }
-
-    //Potwierdzenie otrzymania ciągu danych od serwera, wiem można by zrobić lepiej ;)
-    public void sendConfirmRequest(String urlForGetRequest) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, urlForGetRequest, new Response.Listener<String>() {
-
-            @Override
-            public void onResponse(String response) {
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        }) {
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<>();
-                Boolean isOk = true;
-                String clientNameTest = "KSP_CLIENT";
-                String received = isOk.toString();
-                params.put("received", received);
-                params.put("client", clientNameTest);
-                return params;
-            }
-        };
-        queue.add(stringRequest);
     }
 
     public String readAdressDestination() {
@@ -212,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         yValuesTemperature.add(new Entry(counter, temperature.floatValue()));
         yValuesHumidity.add(new Entry(counter, humidity.floatValue()));
-        yValuesPressure.add(new Entry(counter, (pressure.floatValue()) / 100));
+        yValuesPressure.add(new Entry(counter, (pressure.floatValue()) / 1000));
 
         LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Temperature");
         dataSetTemperature.setFillAlpha(110);
@@ -224,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dataSetHumidity.setColor(Color.GREEN);
         dataSetHumidity.setLineWidth(2f);
 
-        LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Pressure\n(/100)");
+        LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Pressure kPa  ");
         dataSetPressure.setFillAlpha(110);
         dataSetPressure.setColor(Color.BLUE);
         dataSetPressure.setLineWidth(2f);
