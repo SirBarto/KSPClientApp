@@ -12,11 +12,6 @@ import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.Console;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,14 +22,11 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -42,7 +34,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.SerializedName;
 import com.jjoe64.graphview.series.DataPoint;
 
 import retrofit2.Call;
@@ -60,8 +51,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText textIp, textPort;
     TextView textViewIpAdress;
 
-    List<Measurement> pomiarList = new ArrayList<>();
-    private ArrayAdapter<Measurement> pomiarArrayAdapter;
+    List<Measurement> surveyList = new ArrayList<>();
+    private ArrayAdapter<Measurement> surveyArrayAdapter;
 
     ArrayList<ILineDataSet> dataSets;
     ArrayList<String> arrayCounter;
@@ -72,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     ValueFormatter formatter;
     XAxis xAxis;
+    Legend legend;
 
     RequestQueue queue;
     Retrofit retrofit;
@@ -80,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     Double temperature, humidity, pressure;
     AdressContector adressContector;
+    int counter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,33 +88,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         list = findViewById(R.id.valuesList);
 
         textViewIpAdress = findViewById(R.id.textView);
-/*lokalny test
-        pomiarList.add(new Measurement(1.1, 1.3, 1.2));
-        pomiarList.add(new Measurement(2.1, 2.3, 2.2));
-        pomiarList.add(new Measurement(3.1, 3.3, 3.2));
 
-        pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine,pomiarList);
-        list.setAdapter(pomiarArrayAdapter);
-*/
-        //other version
- /*       Measurement[] pomiars = {
-          new Measurement(1.1,1.2,1.3),
-          new Measurement(2.1,2.2,2.3),
-          new Measurement(3.1,3.2,3.3),
-          new Measurement(4.1,4.2,4.3)
-        };
+        surveyArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, surveyList);
 
-        ArrayAdapter<Measurement> adapter = new ArrayAdapter<>(this,R.layout.listdefine,pomiars);
-        list.setAdapter(adapter);
-*/
-        pomiarArrayAdapter = new ArrayAdapter<Measurement>(this, R.layout.listdefine, pomiarList);
-
-        //Graph static
-/*
-        GraphView graphView = findViewById(R.id.chart);
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(getDataPoint());
-        graphView.addSeries(series);
-*/
         formatter = new ValueFormatter() {
             @Override
             public String getAxisLabel(float value, AxisBase axis) {
@@ -162,25 +131,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!response.isSuccessful()) {
                     Log.i("Info", "Information response: " + response.code());
                     Log.i("Info", "Information response body: " + response.body());
-                    //  Log.e("Info","Information call: "+call.toString());
                     return;
                 }
                 List<Measurement> measurements = response.body();
-                int counter=0;
+
                 for (Measurement measurement : measurements) {
                     temperature = measurement.getTemperature();
                     humidity = measurement.getHumidity();
                     pressure = measurement.getPressure();
 
-                    list.setAdapter(pomiarArrayAdapter);
-                    pomiarList.add(new Measurement(temperature, humidity, pressure));
+                    list.setAdapter(surveyArrayAdapter);
+                    surveyList.add(new Measurement(temperature, humidity, pressure));
 
                     counter++;
                     arrayCounter.add(String.valueOf(counter));
 
                     Log.i("info about list", list.toString());
-                    Log.i("info about pomiarList", pomiarList.toString());
-                    drawingChart(temperature, humidity, pressure,counter);
+                    Log.i("info about surveyList", surveyList.toString());
+                    drawingChart(temperature, humidity, pressure, counter);
                 }
             }
 
@@ -190,13 +158,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e("blad", "blad json: " + t.toString());
             }
         });
-                    /*temperature = response.getDouble("temperature");
-                    humidity = response.getDouble("humidity");
-                    pressure = response.getDouble("pressure");
-                    counter++;
-                    drawingChart(temperature, humidity, pressure,counter);
-                    pomiarList.add(new Measurement(temperature, humidity, pressure));
-                    list.setAdapter(pomiarArrayAdapter);*/
         // sendConfirmRequest(urlForGetRequest);
     }
 
@@ -247,32 +208,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         yValuesTemperature.add(new Entry(3,30f));
         yValuesTemperature.add(new Entry(4,10f));
 */
-     //TODO dla kazdego i jest przypisywana ta sama pierwsza pobrana temperatura
+        //TODO dla kazdego i jest przypisywana ta sama pierwsza pobrana temperatura
 
-            yValuesTemperature.add(new Entry(counter, temperature.floatValue()));
-            yValuesHumidity.add(new Entry(counter, humidity.floatValue()));
-            yValuesPressure.add(new Entry(counter, pressure.floatValue()));
+        yValuesTemperature.add(new Entry(counter, temperature.floatValue()));
+        yValuesHumidity.add(new Entry(counter, humidity.floatValue()));
+        yValuesPressure.add(new Entry(counter, (pressure.floatValue()) / 100));
 
-            LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Data Set Temperature");
-            dataSetTemperature.setFillAlpha(110);
-            dataSetTemperature.setColor(Color.RED);
-            dataSetTemperature.setLineWidth(2f);
+        LineDataSet dataSetTemperature = new LineDataSet(yValuesTemperature, "Temperature");
+        dataSetTemperature.setFillAlpha(110);
+        dataSetTemperature.setColor(Color.RED);
+        dataSetTemperature.setLineWidth(2f);
 
-            LineDataSet dataSetHumidity = new LineDataSet(yValuesHumidity, "Data Set Humidity");
-            dataSetHumidity.setFillAlpha(110);
-            dataSetHumidity.setColor(Color.GREEN);
-            dataSetHumidity.setLineWidth(2f);
+        LineDataSet dataSetHumidity = new LineDataSet(yValuesHumidity, "Humidity");
+        dataSetHumidity.setFillAlpha(110);
+        dataSetHumidity.setColor(Color.GREEN);
+        dataSetHumidity.setLineWidth(2f);
 
-            LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Data Set Pressure");
-            dataSetPressure.setFillAlpha(110);
-            dataSetPressure.setColor(Color.BLUE);
-            dataSetPressure.setLineWidth(2f);
+        LineDataSet dataSetPressure = new LineDataSet(yValuesPressure, "Pressure\n(/100)");
+        dataSetPressure.setFillAlpha(110);
+        dataSetPressure.setColor(Color.BLUE);
+        dataSetPressure.setLineWidth(2f);
 
-            dataSets.add(dataSetTemperature);
-            dataSets.add(dataSetHumidity);
-            dataSets.add(dataSetPressure);
+        dataSets.add(dataSetTemperature);
+        dataSets.add(dataSetHumidity);
+        dataSets.add(dataSetPressure);
 
-
+        legend = mchart.getLegend();
+        legend.setYOffset(40);
+        legend.setForm(Legend.LegendForm.DEFAULT);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
 
         LineData data = new LineData(dataSets);
         xAxis.setGranularity(1f);
@@ -299,7 +263,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 aSwitch.setChecked(true);
                 btnConnect.setEnabled(false);
                 btnDisconect.setEnabled(true);
-                //getMeasurementRequest(readAdressDestination());
                 btnConnect.postDelayed(runnable, 3000); /*wywołanie metody po 3s raz zapyta serwer o zestaw danych*/
                 textViewIpAdress.setVisibility(TextView.VISIBLE);
                 break;
@@ -309,7 +272,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 btnConnect.setEnabled(true);
                 textViewIpAdress.setVisibility(TextView.INVISIBLE);
                 btnDisconect.removeCallbacks(runnable); //zatrzymanie pobierania danych z serwera
-                mchart.invalidate();//TODO 00:40 nie sprawdzone
                 break;
         }
     }
@@ -321,7 +283,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             getMeasurementRequest(readAdressDestination());
         }
     };
-
 
 
 }

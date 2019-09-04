@@ -63,18 +63,18 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="156dp"
+        android:background="@color/colorBt"
         android:digits="0123456789"
         android:ems="10"
         android:inputType="number"
         android:maxLength="4"
         android:text="Port"
-        android:background="@color/colorBt"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.166"
+        app:layout_constraintHorizontal_bias="0.162"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.216" />
+        app:layout_constraintVertical_bias="0.198" />
 
     <Button
         android:id="@+id/buttonConnect"
@@ -125,23 +125,23 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.833" />
+        app:layout_constraintVertical_bias="0.934" />
 
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/lineChart"
-        android:layout_width="243dp"
-        android:layout_height="490dp"
+        android:layout_width="237dp"
+        android:layout_height="429dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="145dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="25dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.949"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.591" />
+        app:layout_constraintVertical_bias="0.393" />
 
     <!--
             <com.jjoe64.graphview.GraphView
